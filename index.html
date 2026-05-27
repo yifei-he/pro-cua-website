@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRO-CUA: Process-Reward Optimization for Computer Use Agents</title>
+    <meta
+      name="description"
+      content="Academic project page for PRO-CUA, a process-reward optimization framework for training computer use agents with iterative step-level reinforcement learning."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="PRO-CUA home">
+        <span class="brand-mark">PRO</span>
+        <span>CUA</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#method">Method</a>
+        <a href="#baselines">Baselines</a>
+        <a href="#figures">PRM Grading</a>
+        <a href="#reward-signal">PRM Reward</a>
+        <a href="#results">Results</a>
+        <a href="#data-utilization">Data</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <h1>PRO-CUA: Process-Reward Optimization for Computer Use Agents</h1>
+            <p class="authors">
+              Yifei He, Rui Yang, Hao Bai, Tong Zhang, Han Zhao
+            </p>
+            <p class="affiliation">University of Illinois Urbana-Champaign</p>
+            <div class="actions" aria-label="Project resources">
+              <!-- <a class="button primary" href="assets/paper.pdf">Paper PDF</a> -->
+              <a class="button" href="https://github.com/yifei-he/PRO-CUA">Code</a>
+              <!-- <a class="button" href="https://huggingface.co/datasets/microsoft/WebSTAR"> -->
+                <!-- Model -->
+              </a>
+            </div>
+          </div>
+          <figure class="hero-figure">
+            <img
+              src="assets/pipeline.png"
+              alt="Overview diagram of the PRO-CUA two-stage training pipeline"
+            />
+            <figcaption>
+              PRO-CUA decouples live environment interaction from policy
+              optimization, then applies PRM-graded step-level GRPO.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section summary-band" aria-labelledby="overview-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Overview</div>
+          <h2 id="overview-heading">Self-evolvement with Step-level RL</h2>
+          <p>
+            Computer use agents can automate complex digital workflows, but
+            their training is limited by costly live environment interaction and
+            scarce high-quality supervision. Filtered behavior cloning suffers
+            from imitation bottlenecks and lacks negative learning signals,
+            while trajectory-level reinforcement learning faces sparse rewards,
+            ambiguous credit assignment, and expensive long-horizon GUI
+            interaction.
+          </p>
+          <p>
+            PRO-CUA addresses these constraints with a process-reward
+            optimization framework. The current policy first collects states
+            through live rollouts. For each collected state, the agent samples
+            diverse candidate actions, a process reward model gives step-level
+            feedback, and GRPO updates the policy using group-relative
+            advantages. This creates dense credit assignment without golden
+            answers or offline expert trajectories.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="contributions-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Key Contributions</div>
+          <h2 id="contributions-heading">A scalable recipe for training CUAs</h2>
+          <div class="contribution-grid">
+            <article class="contribution-item">
+              <h3>Tailored CUA infrastructure design</h3>
+              <p>
+                PRO-CUA decouples environment interaction and model training,
+                avoiding the systems burden of simultaneously performing agent
+                rollout, live GUI interaction, and policy optimization.
+              </p>
+            </article>
+            <article class="contribution-item">
+              <h3>On-policy state collection</h3>
+              <p>
+                The framework removes reliance on offline expert
+                demonstrations and trains the agent on states sampled from its
+                own execution distribution, including the difficult states it
+                actually encounters.
+              </p>
+            </article>
+            <article class="contribution-item">
+              <h3>Dense and flexible credit assignment via PRMs</h3>
+              <p>
+                PRO-CUA replaces sparse trajectory-level rewards with
+                PRM-graded step-level GRPO, providing fine-grained supervision
+                without requiring golden answers from expert demonstrations.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="method" aria-labelledby="method-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Method</div>
+          <h2 id="method-heading">Two stages, one self-evolving loop</h2>
+          <div class="method-grid">
+            <article class="method-step">
+              <span class="step-index">01</span>
+              <h3>On-policy state collection</h3>
+              <p>
+                The current policy interacts with live web environments at an
+                elevated sampling temperature. The resulting task instructions,
+                screenshots, and action histories form a state dataset drawn
+                from the agent's own behavior.
+              </p>
+            </article>
+            <article class="method-step">
+              <span class="step-index">02</span>
+              <h3>Step-level rollout</h3>
+              <p>
+                For each collected state, the policy samples multiple candidate
+                thought-action pairs. These candidates are newly generated and
+                are not treated as references for imitation.
+              </p>
+            </article>
+            <article class="method-step">
+              <span class="step-index">03</span>
+              <h3>PRM grading</h3>
+              <p>
+                A multimodal process reward model evaluates whether each
+                proposed action is visually grounded, non-redundant, and useful
+                for task progress, returning a binary step-level reward.
+              </p>
+            </article>
+            <article class="method-step">
+              <span class="step-index">04</span>
+              <h3>GRPO policy update</h3>
+              <p>
+                Group-relative advantages reinforce locally better actions and
+                reduce pressure to imitate a single expert reasoning trace,
+                allowing valid alternative action paths.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt" id="baselines" aria-labelledby="baselines-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Baselines</div>
+          <h2 id="baselines-heading">Why compare against FBC and rule-based Step-RL?</h2>
+          <p>
+            We compare PRO-CUA against two key self-evolving baselines that
+            represent common ways to turn live CUA rollouts into training data.
+            <strong>Filtered Behavior Cloning (FBC)</strong> keeps only
+            successful trajectories and trains the policy to imitate their
+            observed thought-action sequences. This is simple and stable, but it
+            discards failed trajectories, overfits to easy successes, and gives
+            no negative learning signal for recovering from mistakes.
+          </p>
+          <p>
+            <strong>Rule-based Step-RL</strong> uses successful trajectories as
+            golden references, samples candidate actions at each retained state,
+            and rewards candidates that match the reference action in type,
+            target, and text input. This gives denser feedback than FBC, but it
+            still depends on successful rollouts and golden actions. It can
+            penalize valid alternative actions and cannot naturally learn from
+            failed states where no verified reference action is available.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="figures" aria-labelledby="figures-heading">
+        <div class="section-inner">
+          <div class="section-kicker">PRM Grading Pipeline</div>
+          <h2 id="figures-heading">How PRO-CUA grades candidate actions</h2>
+          <p>
+            Since candidate actions in the optimization stage are not executed
+            in the live environment, PRO-CUA asks the PRM to evaluate the
+            proposed action directly from the current multimodal context. The
+            screenshot is annotated at the target coordinates so the PRM can
+            judge whether the action is visually grounded and useful for task
+            progress.
+          </p>
+          <figure class="paper-figure standalone">
+            <img src="assets/prm.png" alt="PRM grading pipeline example with annotated screenshot" />
+            <figcaption>
+              <strong>Process Reward Model grading pipeline.</strong>
+              The PRM receives a multimodal step context comprising the task
+              instruction, the agent's action history, the proposed current
+              action, and an annotated screenshot. For readability, the figure
+              shows a zoomed-in crop, while the actual PRM input contains the
+              full web interface. Based on this augmented context, the PRM
+              reasons about whether the proposed action functionally advances
+              the task and outputs a binary step-level reward.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="reward-signal" aria-labelledby="reward-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Reliability of the PRM Reward Signal</div>
+          <h2 id="reward-heading">PRM feedback provides useful step-level supervision</h2>
+          <p>
+            A central question for PRO-CUA is whether process reward model
+            feedback is reliable enough to optimize the policy. To isolate the
+            reward source, we run a controlled ablation on WebVoyager where
+            rule-based rewards and PRM-based rewards train on the same subset of
+            states from successful trajectories. This setting favors the
+            rule-based baseline because golden reference actions are available
+            and failed trajectories are excluded.
+          </p>
+
+          <div class="table-wrap reward-table" role="region" aria-label="Reward source ablation" tabindex="0">
+            <table>
+              <caption>
+                Comparison of reward sources for step-level RL. Under the same
+                successful-trajectory training subset, PRM-based rewards
+                outperform rule-based rewards, suggesting that visually grounded
+                PRM feedback provides useful supervision for policy optimization.
+              </caption>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Reward type</th>
+                  <th>Success rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Base model</td>
+                  <td>/</td>
+                  <td>27.5</td>
+                </tr>
+                <tr>
+                  <td>Step-RL</td>
+                  <td>Rule-based</td>
+                  <td>34.7</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Step-RL</td>
+                  <td>Qwen3-VL-4B PRM</td>
+                  <td><strong>36.6</strong></td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Step-RL</td>
+                  <td>GPT-5-mini PRM</td>
+                  <td><strong>36.8</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Both PRM variants outperform the rule-based reward despite using the
+            same successful-state subset. The result indicates that visually
+            grounded functional evaluation can be a stronger step-level training
+            signal than exact matching to a single demonstration action.
+          </p>
+
+          <figure class="paper-figure standalone small-plot">
+            <img src="assets/reward.png" alt="Moving average of PRM rewards during training" />
+            <figcaption>
+              <strong>Step-level rewards assigned during training.</strong>
+              We plot moving averages of binary PRM rewards. GPT-5-mini assigns
+              more conservative rewards, while Qwen3-VL-4B is more lenient on
+              average. Despite this calibration gap, both PRMs achieve similar
+              downstream policy performance, suggesting that GRPO is robust to
+              reward strictness differences through group normalization.
+            </figcaption>
+          </figure>
+
+          <p>
+            The moving-average reward curves show a clear calibration gap:
+            GPT-5-mini is stricter, while Qwen3-VL-4B assigns positive rewards
+            more often. PRO-CUA does not require the absolute reward scale to be
+            perfectly calibrated, because GRPO computes mean-centered advantages
+            within each sampled group. The PRM mainly needs to distinguish
+            better and worse candidate actions locally; the training signal is
+            then aggregated across many states, sampled actions, and updates.
+          </p>
+        </div>
+      </section>
+
+      <section class="section alt" id="results" aria-labelledby="results-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Main Results</div>
+          <h2 id="results-heading">Strong gains on live web benchmarks</h2>
+          <p class="section-lead">
+            PRO-CUA improves over filtered behavior cloning and rule-based
+            Step-RL while using no external expert steps in the controlled
+            self-evolving setting.
+          </p>
+
+          <div class="table-wrap" role="region" aria-label="Benchmark result table" tabindex="0">
+            <table>
+              <caption>
+                Task success rates on online web benchmarks
+              </caption>
+              <thead>
+                <tr>
+                  <th>Training paradigm</th>
+                  <th>Method</th>
+                  <th>Ext. expert steps</th>
+                  <th>WebVoyager</th>
+                  <th>Mind2Web-Live</th>
+                  <th>OnlineMind2Web</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td rowspan="5">External expert / closed data</td>
+                  <td>UI-TARS-1.5-7B</td>
+                  <td>Closed data</td>
+                  <td>30.3</td>
+                  <td>18.1</td>
+                  <td>14.6</td>
+                </tr>
+                <tr>
+                  <td>WebSTAR-7B</td>
+                  <td>100K</td>
+                  <td>47.0</td>
+                  <td>17.0</td>
+                  <td>17.0</td>
+                </tr>
+                <tr>
+                  <td>WebSTAR-32B</td>
+                  <td>100K</td>
+                  <td>53.5</td>
+                  <td>20.4</td>
+                  <td>23.8</td>
+                </tr>
+                <tr>
+                  <td>GUI-Libra-4B</td>
+                  <td>81K</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>20.0</td>
+                </tr>
+                <tr>
+                  <td>GUI-Libra-8B</td>
+                  <td>81K</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>19.3</td>
+                </tr>
+                <tr>
+                  <td rowspan="4">Self-evolving 4B</td>
+                  <td>Qwen3-VL-4B-Instruct</td>
+                  <td>0</td>
+                  <td>27.5</td>
+                  <td>18.1</td>
+                  <td>16.7</td>
+                </tr>
+                <tr>
+                  <td>FBC</td>
+                  <td>0</td>
+                  <td>29.7</td>
+                  <td>26.4</td>
+                  <td>23.7</td>
+                </tr>
+                <tr>
+                  <td>Rule-based Step-RL</td>
+                  <td>0</td>
+                  <td>34.7</td>
+                  <td>27.8</td>
+                  <td><strong>29.9</strong></td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>PRO-CUA</td>
+                  <td>0</td>
+                  <td><strong>42.4</strong></td>
+                  <td><strong>34.7</strong></td>
+                  <td>28.8</td>
+                </tr>
+                <tr>
+                  <td rowspan="4">Self-evolving 8B</td>
+                  <td>Qwen3-VL-8B-Instruct</td>
+                  <td>0</td>
+                  <td>25.6</td>
+                  <td>20.8</td>
+                  <td>12.2</td>
+                </tr>
+                <tr>
+                  <td>FBC</td>
+                  <td>0</td>
+                  <td>31.8</td>
+                  <td>23.6</td>
+                  <td>26.9</td>
+                </tr>
+                <tr>
+                  <td>Rule-based Step-RL</td>
+                  <td>0</td>
+                  <td>33.8</td>
+                  <td>25.0</td>
+                  <td>26.2</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>PRO-CUA</td>
+                  <td>0</td>
+                  <td><strong>43.2</strong></td>
+                  <td><strong>30.6</strong></td>
+                  <td><strong>28.2</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="metrics">
+            <div>
+              <span class="metric-value">+12.7</span>
+              <span class="metric-label">WebVoyager gain over FBC, 4B</span>
+            </div>
+            <div>
+              <span class="metric-value">+7.7</span>
+              <span class="metric-label">WebVoyager gain over rule-based Step-RL, 4B</span>
+            </div>
+            <div>
+              <span class="metric-value">0</span>
+              <span class="metric-label">external expert steps in controlled runs</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt" id="data-utilization" aria-labelledby="data-util-heading">
+        <div class="section-inner">
+          <div class="section-kicker">Data Utilization</div>
+          <h2 id="data-util-heading">Learning from more of each rollout budget</h2>
+          <p>
+            PRO-CUA's process rewards allow the training loop to use both
+            successful and failed finished trajectories. This differs from FBC
+            and rule-based Step-RL, which rely on successful rollouts: FBC needs
+            complete successful trajectories for imitation, while rule-based
+            Step-RL needs golden reference actions at each retained state.
+          </p>
+          <figure class="paper-figure standalone small-plot">
+            <img src="assets/data-util.png" alt="Data utilization across training iterations" />
+            <figcaption>
+              <strong>Data utilization across training iterations.</strong>
+              PRO-CUA consistently yields more usable step-level training data
+              than FBC and rule-based Step-RL because process rewards allow
+              learning from both successful and failed finished trajectories,
+              while the baselines rely on successful rollouts.
+            </figcaption>
+          </figure>
+          <p>
+            In practice, agents may spend many steps stuck on the same page, so
+            we apply lightweight filtering and retain states from finished
+            trajectories. Finished trajectories are not necessarily successful:
+            the final answer may still be wrong. Because PRM grading does not
+            require a golden next action, these failed-but-finished trajectories
+            can still produce useful step-level supervision, improving the
+            fraction of on-policy interaction that becomes deployable training
+            data.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
